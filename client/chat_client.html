@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>WebSocket Chat Client</title>
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+  <script type="text/javascript">
+    $(document).ready(function() {
+      var socket;
+      var chatWindow = $('#chat_window');
+      var chatInput = $('#chat_input');
+
+      if(!("WebSocket" in window)){
+        $('#chat').fadeOut("fast");
+        $('<p>Your browser doesn\'t support web sockets.</p>').style({color: red}).appendTo('#container');
+      }else{
+        function connect(){
+          var host = $('#server').val();
+
+          try {
+            socket = new WebSocket(host + '?name=' + $('#username').val().replace(/[^A-Za-z0-9_]/g,"") + '&colour=' + $('#colour').val());
+            socket.onopen = function(){
+              $('#disconnect').show();
+              $('#connect').hide();
+              message('*** Connected. ***');
+              chatInput.focus();
+              $('#connection input, #connection select').attr('disabled', true);
+              $('#chat_input, #chat_container button').removeAttr('disabled');
+            }
+            socket.onclose = function(){
+              $('#disconnect').hide();
+              $('#connect').show();
+              message('*** Disconnected. ***');
+              $('#connection input, #connection select').removeAttr('disabled');
+              $('#chat_input, #chat_container button').attr('disabled', true);
+            }
+            socket.onmessage = function(msg){
+              message(msg.data);
+            }
+          }
+          catch(exception) {
+            message('Error'+exception);
+          }
+
+        }
+
+        function send(){
+          var text = chatInput.val();
+
+          if(text==""){
+            message('Please enter a message.');
+            return ;
+          }
+          try {
+            //Send message
+            socket.send(text);
+          } catch(exception){
+            message('Couldn\'t send');
+          }
+          chatInput.val(""); //Clear chat input box
+        }
+
+        function message(msg){
+          chatWindow.append(msg+'<br/>'); //Add message to chat window
+          chatWindow.scrollTop(chatWindow.height())
+        }
+
+        $('#chat_container button').click(function(){
+          send();
+        });
+
+        chatInput.keypress(function(event) {
+          if (event.keyCode == '13') {
+            send();
+          }
+        });
+
+        $('#disconnect').click(function(){
+          socket.close();
+        });
+
+        $('#connect').click(function(){
+          connect();
+        });
+      }
+
+    });
+  </script>
+  <style type="text/css">
+    body {
+      font-size: 13px;
+      font-family: sans-serif;
+      color: #333333;
+    }
+
+    #wrapper {
+      width: 800px;
+    }
+
+    #chat_container {
+      border-style: solid;
+      border-color: #999;
+      border-radius: 0px 0px 3px 3px;
+      border-width: 0 1px 1px 1px;
+      background-color: #DDD;
+    }
+
+    #chat_window {
+      height: 400px;
+      overflow-y: scroll;
+      border-bottom: 1px solid #999;
+      background-color: #FFF;
+      padding: 0.5em 0.5em 0 0.5em;
+      line-height: 1.5em;
+    }
+
+    #chat_input {
+      width: 720px;
+      padding: 11px 5px;
+      border: 1px solid #ccc;
+      line-height: 32px;
+      margin: 0;
+    }
+
+    #chat_container button {
+      padding: 2px 5px;
+      border: 1px solid #ccc;
+      line-height: 32px;
+      margin: 0;
+      width: 65px;
+    }
+
+    span.username {
+      font-weight: bold;
+    }
+
+    .chat_colour1 {
+      color: #35A;
+    }
+
+    .chat_colour2 {
+      color: #5A3;
+    }
+
+    .chat_colour3 {
+      color: #A53;
+    }
+
+    #connection {
+      border: 1px solid #ccc;
+      border-radius: 3px 3px 0px 0px;
+      padding: 1em;
+      background-color: #ddd;
+    }
+
+    #connection .option {
+      margin-right: 1em;
+    }
+  </style>
+</head>
+<body>
+<h1>Chat Client</h1>
+
+<div id="wrapper">
+  <div id="connection">
+    <div>
+      <span class="option">
+        <strong>Server</strong> <input id="server" type="text" value="ws://" size="40"/>
+      </span>
+    </div>
+
+    <div>
+      <span class="option">
+        <strong>Name</strong> <input id="username" type="text" value="User"/>
+      </span>
+
+      <span class="option">
+        <strong>Colour</strong>
+        <select id="colour" style="width: 5em;">
+          <option value="chat_colour1" class="chat_colour1">Blue</option>
+          <option value="chat_colour2" class="chat_colour2">Green</option>
+          <option value="chat_colour3" class="chat_colour3">Red</option>
+        </select>
+      </span>
+
+      <button id="connect">Connect</button>
+      <button id="disconnect" style="display:none">Disconnect</button>
+    </div>
+  </div>
+
+  <div id="chat_container">
+    <div id="chat_window"></div>
+    <input id="chat_input" type="text" disabled="disabled"/><button disabled="disabled">Send</button>
+  </div>
+</div>
+</body>
+</html>
